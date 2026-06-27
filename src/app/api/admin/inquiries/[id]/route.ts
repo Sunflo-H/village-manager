@@ -1,0 +1,114 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { updateInquirySchema } from '@/lib/validations/inquiry';
+import type { Inquiry } from '@/types/inquiry';
+
+/** GET /api/admin/inquiries/[id] — 관리자 문의 단건 조회 */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // 세션 검증
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다' },
+        { status: 401 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json(
+        { error: '존재하지 않는 문의입니다' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ inquiry: data as Inquiry });
+  } catch (error) {
+    console.error('GET /api/admin/inquiries/[id] 오류:', error);
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다' },
+      { status: 500 }
+    );
+  }
+}
+
+/** PATCH /api/admin/inquiries/[id] — 관리자 문의 수정 */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // 세션 검증
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다' },
+        { status: 401 }
+      );
+    }
+
+    const body: unknown = await request.json();
+
+    // Zod 유효성 검사
+    const result = updateInquirySchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+
+    // 수정할 필드만 추려서 업데이트
+    const updateData: Partial<{ status: string; admin_note: string }> = {};
+    if (result.data.status !== undefined) {
+      updateData.status = result.data.status;
+    }
+    if (result.data.admin_note !== undefined) {
+      updateData.admin_note = result.data.admin_note;
+    }
+
+    const { data, error } = await supabase
+      .from('inquiries')
+      .update(updateData)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      if (error?.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: '존재하지 않는 문의입니다' },
+          { status: 404 }
+        );
+      }
+      console.error('문의 수정 오류:', error);
+      return NextResponse.json(
+        { error: '서버 오류가 발생했습니다' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ inquiry: data as Inquiry });
+  } catch (error) {
+    console.error('PATCH /api/admin/inquiries/[id] 오류:', error);
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다' },
+      { status: 500 }
+    );
+  }
+}
