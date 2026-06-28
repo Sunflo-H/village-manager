@@ -11,17 +11,7 @@ export const metadata: Metadata = {
 /** 홈 페이지 — 테넌트/관리자 진입점 선택 */
 export default function HomePage() {
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-12">
-      {/* 관리자 로그인 — 우측 상단 고정 */}
-      <div className="absolute right-4 top-4">
-        <Link
-          href="/admin/login"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-        >
-          관리자 로그인
-        </Link>
-      </div>
-
+    <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* 헤더 */}
         <div className="mb-10 text-center">
@@ -54,6 +44,16 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+
+        {/* 관리자 링크 */}
+        <div className="mt-6 text-center">
+          <Link
+            href="/admin/login"
+            className="text-xs text-gray-400 underline-offset-4 hover:text-gray-600 hover:underline"
+          >
+            관리자 로그인
+          </Link>
+        </div>
       </div>
     </main>
   );
