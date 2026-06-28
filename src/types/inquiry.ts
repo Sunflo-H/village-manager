@@ -13,14 +13,15 @@ export interface Inquiry {
   category: InquiryCategory;
   status: InquiryStatus;
   admin_note: string | null; // 관리자 메모
+  image_urls: string[];     // 첨부 이미지 URL 목록
   created_at: string;       // timestamptz
   updated_at: string;       // timestamptz
 }
 
-/** 입주자 문의 조회용 — 관리자 전용 필드(admin_note, store_id) 제외 */
+/** 입주자 문의 조회용 — 관리자 전용 필드(admin_note, store_id, pin) 제외 */
 export type InquirySummary = Pick<
   Inquiry,
-  'id' | 'store_name' | 'content' | 'category' | 'status' | 'created_at'
+  'id' | 'store_name' | 'content' | 'category' | 'status' | 'created_at' | 'image_urls'
 >;
 
 /** POST /api/inquiries 요청 */
@@ -28,6 +29,8 @@ export interface CreateInquiryRequest {
   storeName: string;        // 1~50자
   content: string;          // 1~500자
   category: InquiryCategory;
+  pin: string;              // 4~8자리 숫자
+  imageUrls?: string[];     // 첨부 이미지 URL 목록 (최대 3장)
 }
 
 /** POST /api/inquiries 응답 */

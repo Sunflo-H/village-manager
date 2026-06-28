@@ -49,6 +49,18 @@ export default function AdminLoginPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            홈으로
+          </button>
+        </div>
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">관리자 로그인</h1>
         </div>

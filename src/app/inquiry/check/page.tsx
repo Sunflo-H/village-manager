@@ -14,7 +14,6 @@ import InquiryCard from '@/components/inquiry/InquiryCard';
 /** 내 문의 조회 페이지 */
 export default function InquiryCheckPage() {
   const { inquiries, isLoading, error, storeName, fetchInquiries } = useInquiryStore();
-  // 조회 결과 유무 판별 (한 번이라도 조회가 실행됐는지)
   const hasSearched = storeName !== '';
 
   const {
@@ -27,7 +26,7 @@ export default function InquiryCheckPage() {
   });
 
   const onSubmit = async (data: CheckInquiryInput) => {
-    await fetchInquiries(data.storeName.trim());
+    await fetchInquiries(data.storeName.trim(), data.pin.trim());
   };
 
   return (
@@ -64,21 +63,36 @@ export default function InquiryCheckPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="storeName">매장명</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="storeName"
-                  placeholder="매장명을 입력해 주세요"
-                  aria-invalid={!!errors.storeName}
-                  {...register('storeName')}
-                />
-                <Button type="submit" disabled={isLoading} className="shrink-0">
-                  {isLoading ? '조회 중...' : '조회'}
-                </Button>
-              </div>
+              <Input
+                id="storeName"
+                placeholder="매장명을 입력해 주세요"
+                aria-invalid={!!errors.storeName}
+                {...register('storeName')}
+              />
               {errors.storeName && (
                 <p className="text-xs text-red-600">{errors.storeName.message}</p>
               )}
             </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="pin">PIN</Label>
+              <Input
+                id="pin"
+                type="password"
+                inputMode="numeric"
+                placeholder="문의 등록 시 설정한 PIN"
+                maxLength={8}
+                aria-invalid={!!errors.pin}
+                {...register('pin')}
+              />
+              {errors.pin && (
+                <p className="text-xs text-red-600">{errors.pin.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? '조회 중...' : '조회'}
+            </Button>
           </form>
         </div>
 
@@ -109,8 +123,7 @@ export default function InquiryCheckPage() {
             ) : (
               <div className="rounded-xl border border-dashed border-gray-200 py-12 text-center">
                 <p className="mb-4 text-sm text-gray-500">
-                  <span className="font-medium">{storeName}</span>으로 등록된
-                  문의가 없습니다
+                  일치하는 문의가 없습니다. 매장명과 PIN을 확인해 주세요
                 </p>
                 <Link
                   href="/inquiry/new"

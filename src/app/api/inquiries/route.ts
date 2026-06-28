@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     const body: unknown = await request.json();
 
-    // Zod 유효성 검사
     const result = createInquirySchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -17,8 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { storeName, content, category } = result.data;
-    // 앞뒤 공백 제거
+    const { storeName, content, category, pin, imageUrls } = result.data;
     const trimmedStoreName = storeName.trim();
 
     const supabase = await createClient();
@@ -50,7 +48,7 @@ export async function POST(request: NextRequest) {
       storeId = newStore.id as string;
     }
 
-    // 문의 INSERT
+    // 문의 INSERT (pin, image_urls 포함)
     const { data: inquiry, error: inquiryError } = await supabase
       .from('inquiries')
       .insert({
@@ -59,6 +57,8 @@ export async function POST(request: NextRequest) {
         content,
         category,
         status: 'PENDING',
+        pin,
+        image_urls: imageUrls ?? [],
       })
       .select('id')
       .single();
@@ -86,13 +86,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** GET /api/inquiries?storeName=<매장명> — 입주자 문의 목록 조회 */
+/** GET /api/inquiries?storeName=<매장명>&pin=<PIN> — 입주자 문의 목록 조회 */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const storeName = searchParams.get('storeName');
+    const pin = searchParams.get('pin');
 
-    // storeName 필수 검증
     if (!storeName || storeName.trim() === '') {
       return NextResponse.json(
         { error: '매장명을 입력해 주세요' },
@@ -100,12 +100,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!pin || pin.trim() === '') {
+      return NextResponse.json(
+        { error: 'PIN을 입력해 주세요' },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
+    // store_name과 pin이 모두 일치하는 문의만 조회
     const { data, error } = await supabase
       .from('inquiries')
-      .select('id, store_name, content, category, status, created_at')
+      .select('id, store_name, content, category, status, created_at, image_urls')
       .eq('store_name', storeName.trim())
+      .eq('pin', pin.trim())
       .order('created_at', { ascending: false });
 
     if (error) {

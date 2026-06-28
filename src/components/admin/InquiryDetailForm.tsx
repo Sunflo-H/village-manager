@@ -95,7 +95,7 @@ export default function InquiryDetailForm({ inquiry }: InquiryDetailFormProps) {
               onValueChange={(value) => field.onChange(value)}
             >
               <SelectTrigger id="status" className="w-full sm:w-48">
-                <SelectValue />
+                <SelectValue>{field.value ? STATUS_LABELS[field.value] : ''}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {INQUIRY_STATUSES.map((status) => (

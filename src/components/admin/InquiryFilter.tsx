@@ -46,7 +46,9 @@ export default function InquiryFilter() {
         <Label className="text-xs text-gray-500">상태</Label>
         <Select value={statusFilter} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="전체" />
+            <SelectValue placeholder="전체">
+              {statusFilter === 'ALL' ? '전체' : STATUS_LABELS[statusFilter as InquiryStatus]}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">전체</SelectItem>

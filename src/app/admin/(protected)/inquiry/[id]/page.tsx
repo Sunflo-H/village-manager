@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
 import type { Inquiry } from '@/types/inquiry';
 import InquiryStatusBadge from '@/components/inquiry/InquiryStatusBadge';
@@ -91,6 +92,31 @@ export default async function AdminInquiryDetailPage({
         <div className="rounded-lg bg-gray-50 p-4">
           <p className="text-sm whitespace-pre-wrap text-gray-700">{inquiry.content}</p>
         </div>
+
+        {/* 첨부 이미지 */}
+        {inquiry.image_urls && inquiry.image_urls.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-medium text-gray-500">첨부 사진</p>
+            <div className="flex flex-wrap gap-3">
+              {inquiry.image_urls.map((url, i) => (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative h-32 w-32 overflow-hidden rounded-lg border border-gray-200"
+                >
+                  <Image
+                    src={url}
+                    alt={`첨부 이미지 ${i + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 상태 및 메모 편집 */}
