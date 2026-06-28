@@ -66,7 +66,9 @@ export default function InquiryFilter() {
         <Label className="text-xs text-gray-500">카테고리</Label>
         <Select value={categoryFilter} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="전체" />
+            <SelectValue placeholder="전체">
+              {categoryFilter === 'ALL' ? '전체' : categoryFilter}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">전체</SelectItem>
