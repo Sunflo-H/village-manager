@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -33,6 +33,14 @@ export default function InquiryForm() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 언마운트 시 Object URL 전체 해제
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -63,9 +71,9 @@ export default function InquiryForm() {
 
   /** 이미지 제거 */
   const removeImage = (index: number) => {
-    const updated = previewFiles.filter((_, i) => i !== index);
-    setPreviewFiles(updated);
-    setPreviewUrls(updated.map((f) => URL.createObjectURL(f)));
+    URL.revokeObjectURL(previewUrls[index]);
+    setPreviewFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

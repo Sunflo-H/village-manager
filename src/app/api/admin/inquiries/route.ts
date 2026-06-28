@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // 세션 검증
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    // 사용자 검증 (getUser는 매 호출마다 서버 검증)
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
         { error: '인증이 필요합니다' },
         { status: 401 }

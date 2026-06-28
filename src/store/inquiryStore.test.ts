@@ -12,6 +12,7 @@ const mockInquiry: InquirySummary = {
   category: '에어컨',
   status: 'PENDING',
   created_at: '2026-06-26T00:00:00Z',
+  image_urls: [],
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -30,6 +31,10 @@ describe('useInquiryStore', () => {
   describe('초기 상태', () => {
     it('초기 storeName은 빈 문자열이어야 한다', () => {
       expect(useInquiryStore.getState().storeName).toBe('');
+    });
+
+    it('초기 pin은 빈 문자열이어야 한다', () => {
+      expect(useInquiryStore.getState().pin).toBe('');
     });
 
     it('초기 inquiries는 빈 배열이어야 한다', () => {
@@ -66,7 +71,7 @@ describe('useInquiryStore', () => {
         json: async () => mockResponse,
       } as Response);
 
-      await useInquiryStore.getState().fetchInquiries('스타벅스');
+      await useInquiryStore.getState().fetchInquiries('스타벅스', '1234');
 
       const state = useInquiryStore.getState();
       expect(state.inquiries).toEqual([mockInquiry]);
@@ -83,7 +88,7 @@ describe('useInquiryStore', () => {
 
       global.fetch = vi.fn().mockReturnValueOnce(pendingPromise);
 
-      const fetchPromise = useInquiryStore.getState().fetchInquiries('스타벅스');
+      const fetchPromise = useInquiryStore.getState().fetchInquiries('스타벅스', '1234');
       expect(useInquiryStore.getState().isLoading).toBe(true);
 
       resolvePromise({
@@ -101,7 +106,7 @@ describe('useInquiryStore', () => {
         json: async () => ({ error: '조회 실패' }),
       } as Response);
 
-      await useInquiryStore.getState().fetchInquiries('없는매장');
+      await useInquiryStore.getState().fetchInquiries('없는매장', '1234');
 
       const state = useInquiryStore.getState();
       expect(state.error).toBe('조회 실패');
@@ -115,7 +120,7 @@ describe('useInquiryStore', () => {
         json: async () => ({}),
       } as Response);
 
-      await useInquiryStore.getState().fetchInquiries('없는매장');
+      await useInquiryStore.getState().fetchInquiries('없는매장', '1234');
 
       const state = useInquiryStore.getState();
       expect(state.error).toBe('조회 중 오류가 발생했습니다');
@@ -124,23 +129,23 @@ describe('useInquiryStore', () => {
     it('네트워크 오류 발생 시 일시적 오류 메시지를 설정해야 한다', async () => {
       global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network Error'));
 
-      await useInquiryStore.getState().fetchInquiries('스타벅스');
+      await useInquiryStore.getState().fetchInquiries('스타벅스', '1234');
 
       const state = useInquiryStore.getState();
       expect(state.error).toBe('일시적인 오류가 발생했습니다. 다시 시도해 주세요');
       expect(state.isLoading).toBe(false);
     });
 
-    it('올바른 URL(storeName URL 인코딩 포함)로 fetch를 호출해야 한다', async () => {
+    it('올바른 URL(storeName과 pin URL 인코딩 포함)로 fetch를 호출해야 한다', async () => {
       global.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
         json: async () => ({ inquiries: [] }),
       } as Response);
 
-      await useInquiryStore.getState().fetchInquiries('스타벅스 강남점');
+      await useInquiryStore.getState().fetchInquiries('스타벅스 강남점', '1234');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/inquiries?storeName=${encodeURIComponent('스타벅스 강남점')}`
+        `/api/inquiries?storeName=${encodeURIComponent('스타벅스 강남점')}&pin=${encodeURIComponent('1234')}`
       );
     });
   });
@@ -152,13 +157,14 @@ describe('useInquiryStore', () => {
         ok: true,
         json: async () => ({ inquiries: [mockInquiry] }),
       } as Response);
-      await useInquiryStore.getState().fetchInquiries('스타벅스');
+      await useInquiryStore.getState().fetchInquiries('스타벅스', '1234');
 
       // reset 실행
       useInquiryStore.getState().reset();
 
       const state = useInquiryStore.getState();
       expect(state.storeName).toBe('');
+      expect(state.pin).toBe('');
       expect(state.inquiries).toEqual([]);
       expect(state.isLoading).toBe(false);
       expect(state.error).toBeNull();

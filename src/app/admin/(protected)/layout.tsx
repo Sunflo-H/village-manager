@@ -11,13 +11,12 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient();
 
-  // 세션 검증 — 없으면 로그인 페이지로 리다이렉트
+  // 사용자 검증 — 없으면 로그인 페이지로 리다이렉트
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // 로그인 페이지는 레이아웃에서 제외
-  if (!session) {
+  if (!user) {
     redirect('/admin/login');
   }
 
@@ -35,7 +34,7 @@ export default async function AdminLayout({
             </Link>
           </nav>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500">{session.user.email}</span>
+            <span className="text-xs text-gray-500">{user.email}</span>
             <AdminLogoutButton />
           </div>
         </div>

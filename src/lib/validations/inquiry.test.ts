@@ -18,6 +18,7 @@ describe('createInquirySchema', () => {
         storeName: '스타벅스',
         content: '에어컨이 작동하지 않습니다.',
         category: '에어컨' as const,
+        pin: '1234',
       };
       const result = createInquirySchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -25,6 +26,7 @@ describe('createInquirySchema', () => {
         expect(result.data.storeName).toBe('스타벅스');
         expect(result.data.content).toBe('에어컨이 작동하지 않습니다.');
         expect(result.data.category).toBe('에어컨');
+        expect(result.data.pin).toBe('1234');
       }
     });
 
@@ -34,6 +36,7 @@ describe('createInquirySchema', () => {
           storeName: '테스트매장',
           content: '문의 내용입니다.',
           category,
+          pin: '1234',
         });
         expect(result.success).toBe(true);
       });
@@ -44,6 +47,7 @@ describe('createInquirySchema', () => {
         storeName: 'a'.repeat(50),
         content: '문의 내용입니다.',
         category: '시설' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(true);
     });
@@ -53,6 +57,44 @@ describe('createInquirySchema', () => {
         storeName: '테스트매장',
         content: 'a'.repeat(500),
         category: '기타' as const,
+        pin: '1234',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('imageUrls 없이도 파싱에 성공해야 한다 (optional 필드)', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '1234',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.imageUrls).toBeUndefined();
+      }
+    });
+
+    it('imageUrls 최대 3개까지 허용해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '1234',
+        imageUrls: ['https://example.com/1.jpg', 'https://example.com/2.jpg', 'https://example.com/3.jpg'],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.imageUrls).toHaveLength(3);
+      }
+    });
+
+    it('PIN 8자리 숫자를 허용해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '12345678',
       });
       expect(result.success).toBe(true);
     });
@@ -64,6 +106,7 @@ describe('createInquirySchema', () => {
         storeName: '',
         content: '문의 내용입니다.',
         category: '전기' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -79,6 +122,7 @@ describe('createInquirySchema', () => {
         storeName: 'a'.repeat(51),
         content: '문의 내용입니다.',
         category: '전기' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -96,6 +140,7 @@ describe('createInquirySchema', () => {
         storeName: '테스트매장',
         content: '',
         category: '배관' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -111,6 +156,7 @@ describe('createInquirySchema', () => {
         storeName: '테스트매장',
         content: 'a'.repeat(501),
         category: '배관' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -122,12 +168,85 @@ describe('createInquirySchema', () => {
     });
   });
 
+  describe('에러 케이스: pin', () => {
+    it('pin 필드가 누락되면 실패해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('PIN이 3자리 이하면 "PIN은 4자리 이상 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '123',
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('PIN은 4자리 이상 입력해 주세요');
+      }
+    });
+
+    it('PIN이 9자리 이상이면 "PIN은 8자리 이하로 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '123456789',
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('PIN은 8자리 이하로 입력해 주세요');
+      }
+    });
+
+    it('PIN에 숫자가 아닌 문자가 포함되면 "숫자만 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '12ab',
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('숫자만 입력해 주세요');
+      }
+    });
+  });
+
+  describe('에러 케이스: imageUrls', () => {
+    it('imageUrls가 4개 이상이면 실패해야 한다', () => {
+      const result = createInquirySchema.safeParse({
+        storeName: '테스트매장',
+        content: '문의 내용입니다.',
+        category: '전기' as const,
+        pin: '1234',
+        imageUrls: ['url1', 'url2', 'url3', 'url4'],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe('에러 케이스: category', () => {
     it('허용되지 않은 카테고리 값은 "카테고리를 선택해 주세요" 에러를 반환해야 한다', () => {
       const result = createInquirySchema.safeParse({
         storeName: '테스트매장',
         content: '문의 내용입니다.',
         category: '잘못된카테고리',
+        pin: '1234',
       });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -142,6 +261,7 @@ describe('createInquirySchema', () => {
       const result = createInquirySchema.safeParse({
         storeName: '테스트매장',
         content: '문의 내용입니다.',
+        pin: '1234',
       });
       expect(result.success).toBe(false);
     });
@@ -155,6 +275,7 @@ describe('createInquirySchema', () => {
         storeName: ' ',
         content: '문의 내용입니다.',
         category: '기타' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(true);
     });
@@ -164,6 +285,7 @@ describe('createInquirySchema', () => {
         storeName: 'A',
         content: '문의 내용입니다.',
         category: '시설' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(true);
     });
@@ -173,6 +295,7 @@ describe('createInquirySchema', () => {
         storeName: '테스트매장',
         content: 'A',
         category: '시설' as const,
+        pin: '1234',
       });
       expect(result.success).toBe(true);
     });
@@ -184,24 +307,79 @@ describe('createInquirySchema', () => {
 // ─────────────────────────────────────────────────────────────
 describe('checkInquirySchema', () => {
   describe('정상 케이스', () => {
-    it('매장명이 있으면 파싱에 성공해야 한다', () => {
-      const result = checkInquirySchema.safeParse({ storeName: '스타벅스' });
+    it('매장명과 PIN이 모두 있으면 파싱에 성공해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '1234' });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.storeName).toBe('스타벅스');
+        expect(result.data.pin).toBe('1234');
+      }
+    });
+
+    it('PIN 4자리 최솟값을 허용해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '1234' });
+      expect(result.success).toBe(true);
+    });
+
+    it('PIN 8자리 최댓값을 허용해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '12345678' });
       expect(result.success).toBe(true);
     });
   });
 
   describe('에러 케이스', () => {
     it('빈 매장명은 "매장명을 입력해 주세요" 에러를 반환해야 한다', () => {
-      const result = checkInquirySchema.safeParse({ storeName: '' });
+      const result = checkInquirySchema.safeParse({ storeName: '', pin: '1234' });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('매장명을 입력해 주세요');
+        const storeNameError = result.error.issues.find(
+          (issue) => issue.path[0] === 'storeName'
+        );
+        expect(storeNameError?.message).toBe('매장명을 입력해 주세요');
       }
     });
 
     it('storeName 필드가 누락되면 실패해야 한다', () => {
-      const result = checkInquirySchema.safeParse({});
+      const result = checkInquirySchema.safeParse({ pin: '1234' });
       expect(result.success).toBe(false);
+    });
+
+    it('PIN이 누락되면 실패해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스' });
+      expect(result.success).toBe(false);
+    });
+
+    it('PIN이 3자리 이하면 "PIN은 4자리 이상 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '123' });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('PIN은 4자리 이상 입력해 주세요');
+      }
+    });
+
+    it('PIN이 9자리 이상이면 "PIN은 8자리 이하로 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '123456789' });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('PIN은 8자리 이하로 입력해 주세요');
+      }
+    });
+
+    it('PIN에 숫자가 아닌 문자가 포함되면 "숫자만 입력해 주세요" 에러를 반환해야 한다', () => {
+      const result = checkInquirySchema.safeParse({ storeName: '스타벅스', pin: '12ab' });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const pinError = result.error.issues.find(
+          (issue) => issue.path[0] === 'pin'
+        );
+        expect(pinError?.message).toBe('숫자만 입력해 주세요');
+      }
     });
   });
 });

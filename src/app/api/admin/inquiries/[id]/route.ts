@@ -12,9 +12,8 @@ export async function GET(
     const { id } = await params;
     const supabase = await createClient();
 
-    // 세션 검증
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
         { error: '인증이 필요합니다' },
         { status: 401 }
@@ -53,9 +52,8 @@ export async function PATCH(
     const { id } = await params;
     const supabase = await createClient();
 
-    // 세션 검증
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
         { error: '인증이 필요합니다' },
         { status: 401 }
@@ -64,7 +62,6 @@ export async function PATCH(
 
     const body: unknown = await request.json();
 
-    // Zod 유효성 검사
     const result = updateInquirySchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -73,13 +70,16 @@ export async function PATCH(
       );
     }
 
-    // 수정할 필드만 추려서 업데이트
     const updateData: Partial<{ status: string; admin_note: string }> = {};
-    if (result.data.status !== undefined) {
-      updateData.status = result.data.status;
-    }
-    if (result.data.admin_note !== undefined) {
-      updateData.admin_note = result.data.admin_note;
+    if (result.data.status !== undefined) updateData.status = result.data.status;
+    if (result.data.admin_note !== undefined) updateData.admin_note = result.data.admin_note;
+
+    // 수정할 필드가 없으면 400 반환
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: '수정할 항목이 없습니다' },
+        { status: 400 }
+      );
     }
 
     const { data, error } = await supabase

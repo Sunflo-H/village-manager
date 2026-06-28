@@ -1,14 +1,10 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 const BUCKET = 'inquiry-images';
 
 /** 브라우저에서 이미지를 Supabase Storage에 업로드하고 공개 URL 배열을 반환 */
 export async function uploadInquiryImages(files: File[]): Promise<string[]> {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
+  const supabase = createClient();
   const urls: string[] = [];
 
   for (const file of files) {

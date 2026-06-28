@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHmac } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
-import { createInquirySchema } from '@/lib/validations/inquiry';
+import { createInquirySchema, checkInquirySchema } from '@/lib/validations/inquiry';
 import type { InquirySummary } from '@/types/inquiry';
+
+/** PIN을 단방향 해싱 — 평문 저장 방지 */
+function hashPin(pin: string): string {
+  const salt = process.env.PIN_HASH_SALT ?? 'village-manager-default-salt';
+  return createHmac('sha256', salt).update(pin).digest('hex');
+}
 
 /** POST /api/inquiries — 문의 등록 */
 export async function POST(request: NextRequest) {
@@ -21,43 +28,31 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // stores 테이블에서 매장명 조회 (없으면 신규 생성)
-    let storeId: string;
-    const { data: existingStore } = await supabase
+    // 매장 upsert — 동시 요청 경쟁 조건 방지
+    const { data: store, error: storeError } = await supabase
       .from('stores')
+      .upsert({ name: trimmedStoreName }, { onConflict: 'name' })
       .select('id')
-      .eq('name', trimmedStoreName)
       .single();
 
-    if (existingStore) {
-      storeId = existingStore.id as string;
-    } else {
-      const { data: newStore, error: storeError } = await supabase
-        .from('stores')
-        .insert({ name: trimmedStoreName })
-        .select('id')
-        .single();
-
-      if (storeError || !newStore) {
-        console.error('매장 생성 오류:', storeError);
-        return NextResponse.json(
-          { error: '서버 오류가 발생했습니다' },
-          { status: 500 }
-        );
-      }
-      storeId = newStore.id as string;
+    if (storeError || !store) {
+      console.error('매장 생성/조회 오류:', storeError);
+      return NextResponse.json(
+        { error: '서버 오류가 발생했습니다' },
+        { status: 500 }
+      );
     }
 
-    // 문의 INSERT (pin, image_urls 포함)
+    // 문의 INSERT (PIN 해싱 후 저장)
     const { data: inquiry, error: inquiryError } = await supabase
       .from('inquiries')
       .insert({
-        store_id: storeId,
+        store_id: store.id,
         store_name: trimmedStoreName,
         content,
         category,
         status: 'PENDING',
-        pin,
+        pin: hashPin(pin),
         image_urls: imageUrls ?? [],
       })
       .select('id')
@@ -90,31 +85,29 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const storeName = searchParams.get('storeName');
-    const pin = searchParams.get('pin');
 
-    if (!storeName || storeName.trim() === '') {
+    // checkInquirySchema로 쿼리 파라미터 검증
+    const result = checkInquirySchema.safeParse({
+      storeName: searchParams.get('storeName') ?? '',
+      pin: searchParams.get('pin') ?? '',
+    });
+
+    if (!result.success) {
       return NextResponse.json(
-        { error: '매장명을 입력해 주세요' },
+        { error: result.error.issues[0].message },
         { status: 400 }
       );
     }
 
-    if (!pin || pin.trim() === '') {
-      return NextResponse.json(
-        { error: 'PIN을 입력해 주세요' },
-        { status: 400 }
-      );
-    }
-
+    const { storeName, pin } = result.data;
     const supabase = await createClient();
 
-    // store_name과 pin이 모두 일치하는 문의만 조회
+    // store_name과 해시된 pin이 모두 일치하는 문의만 조회
     const { data, error } = await supabase
       .from('inquiries')
       .select('id, store_name, content, category, status, created_at, image_urls')
       .eq('store_name', storeName.trim())
-      .eq('pin', pin.trim())
+      .eq('pin', hashPin(pin.trim()))
       .order('created_at', { ascending: false });
 
     if (error) {
