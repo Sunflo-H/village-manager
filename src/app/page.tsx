@@ -8,10 +8,20 @@ export const metadata: Metadata = {
   description: '빌라/상가 입주 매장의 시설 보수 문의를 등록하고 처리 현황을 확인하세요',
 };
 
-/** 홈 페이지 — 입주자/관리자 진입점 선택 */
+/** 홈 페이지 — 테넌트/관리자 진입점 선택 */
 export default function HomePage() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-12">
+      {/* 관리자 로그인 — 우측 상단 고정 */}
+      <div className="absolute right-4 top-4">
+        <Link
+          href="/admin/login"
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+        >
+          관리자 로그인
+        </Link>
+      </div>
+
       <div className="w-full max-w-md">
         {/* 헤더 */}
         <div className="mb-10 text-center">
@@ -23,9 +33,9 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* 입주자 섹션 */}
+        {/* 테넌트 섹션 */}
         <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-1 font-semibold text-gray-900">입주자</h2>
+          <h2 className="mb-1 font-semibold text-gray-900">테넌트</h2>
           <p className="mb-4 text-sm text-gray-500">
             로그인 없이 매장명만으로 문의를 등록하고 조회할 수 있습니다
           </p>
@@ -44,16 +54,6 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
-
-        {/* 관리자 링크 */}
-        <div className="mt-6 text-center">
-          <Link
-            href="/admin/login"
-            className="text-xs text-gray-400 underline-offset-4 hover:text-gray-600 hover:underline"
-          >
-            관리자 로그인
-          </Link>
-        </div>
       </div>
     </main>
   );
