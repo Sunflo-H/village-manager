@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (inquiryError || !inquiry) {
-      console.error('문의 등록 오류 상세:', JSON.stringify(inquiryError));
+      console.error('문의 등록 오류:', inquiryError);
       return NextResponse.json(
-        { error: `서버 오류: ${inquiryError?.message ?? '알 수 없는 오류'} (code: ${inquiryError?.code})` },
+        { error: '서버 오류가 발생했습니다' },
         { status: 500 }
       );
     }
