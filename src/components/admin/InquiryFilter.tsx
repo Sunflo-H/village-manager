@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import DateRangePicker from '@/components/admin/DateRangePicker';
 
 /** 상태 라벨 매핑 */
 const STATUS_LABELS: Record<InquiryStatus, string> = {
@@ -79,6 +80,12 @@ export default function InquiryFilter() {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* 날짜 범위 필터 */}
+      <div className="flex flex-col gap-1">
+        <Label className="text-xs text-gray-500">기간</Label>
+        <DateRangePicker />
       </div>
 
       {/* 필터 초기화 */}

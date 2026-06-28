@@ -8,7 +8,7 @@ import InquiryTable from '@/components/admin/InquiryTable';
 
 /** 관리자 대시보드 페이지 */
 export default function AdminDashboardPage() {
-  const { statusFilter, categoryFilter } = useAdminStore();
+  const { statusFilter, categoryFilter, dateFrom, dateTo } = useAdminStore();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +25,8 @@ export default function AdminDashboardPage() {
         const params = new URLSearchParams();
         if (statusFilter !== 'ALL') params.set('status', statusFilter);
         if (categoryFilter !== 'ALL') params.set('category', categoryFilter);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
 
         const response = await fetch(`/api/admin/inquiries?${params.toString()}`);
         const data: { inquiries: Inquiry[] } | { error: string } = await response.json();
@@ -52,7 +54,7 @@ export default function AdminDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, categoryFilter]);
+  }, [statusFilter, categoryFilter, dateFrom, dateTo]);
 
   return (
     <div className="flex flex-col gap-6">
